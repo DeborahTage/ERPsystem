@@ -1,0 +1,6 @@
+package com.trustagro.finance.entity;
+
+public enum ExpenseCategory {
+    FEED_PURCHASE, DRUG_PURCHASE, VACCINE_PURCHASE, LABOR, TRANSPORT,
+    UTILITIES, EQUIPMENT, MAINTENANCE, MARKETING, OTHER_EXPENSE
+}
