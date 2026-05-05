@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 public class UserRequest {
@@ -14,6 +15,7 @@ public class UserRequest {
     @NotBlank @Email
     private String email;
     private String phone;
+    @ToString.Exclude
     private String password;
     @NotNull
     private Role role;

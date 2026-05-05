@@ -6,6 +6,7 @@ import com.trustagro.farm.dto.DailyFarmRecordResponse;
 import com.trustagro.farm.service.DailyFarmRecordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ public class DailyFarmRecordController {
     private final DailyFarmRecordService service;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_MANAGER','VET')")
     public ResponseEntity<ApiResponse<List<DailyFarmRecordResponse>>> getAll(
             @RequestParam(required = false) Long farmId,
             @RequestParam(required = false) Long flockId) {
@@ -29,18 +31,19 @@ public class DailyFarmRecordController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_MANAGER','VET')")
     public ResponseEntity<ApiResponse<DailyFarmRecordResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(service.getById(id)));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','FARM_MANAGER','OPERATIONS_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_MANAGER','VET')")
     public ResponseEntity<ApiResponse<DailyFarmRecordResponse>> create(@Valid @RequestBody DailyFarmRecordRequest req) {
-        return ResponseEntity.ok(ApiResponse.success("Record created", service.create(req)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Record created", service.create(req)));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','FARM_MANAGER','OPERATIONS_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_MANAGER','VET')")
     public ResponseEntity<ApiResponse<DailyFarmRecordResponse>> update(@PathVariable Long id, @Valid @RequestBody DailyFarmRecordRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Record updated", service.update(id, req)));
     }

@@ -22,13 +22,13 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','GENERAL_MANAGER','OPERATIONS_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAll() {
         return ResponseEntity.ok(ApiResponse.success(userService.getAll()));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','GENERAL_MANAGER','OPERATIONS_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getById(id)));
     }

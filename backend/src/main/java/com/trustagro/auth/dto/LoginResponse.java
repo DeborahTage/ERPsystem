@@ -8,6 +8,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class LoginResponse {
     private String token;
+    private String tokenType;
+    private Long expiresIn;
     private Long userId;
     private String fullName;
     private String email;

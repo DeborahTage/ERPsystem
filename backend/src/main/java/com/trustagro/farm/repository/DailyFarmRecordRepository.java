@@ -11,8 +11,10 @@ import java.util.Optional;
 
 public interface DailyFarmRecordRepository extends JpaRepository<DailyFarmRecord, Long> {
     List<DailyFarmRecord> findByFarmId(Long farmId);
+    List<DailyFarmRecord> findByFarmIdOrderByDateDesc(Long farmId);
     List<DailyFarmRecord> findByFlockId(Long flockId);
     boolean existsByFarmIdAndFlockIdAndDate(Long farmId, Long flockId, LocalDate date);
+    boolean existsByFarmIdAndFlockIdAndDateAndIdNot(Long farmId, Long flockId, LocalDate date, Long id);
     Optional<DailyFarmRecord> findTopByFlockIdOrderByDateDesc(Long flockId);
 
     @Query("SELECT COALESCE(SUM(d.mortality), 0) FROM DailyFarmRecord d WHERE d.date = :date")

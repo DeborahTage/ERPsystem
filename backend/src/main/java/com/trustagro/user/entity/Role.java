@@ -2,9 +2,11 @@ package com.trustagro.user.entity;
 
 public enum Role {
     ADMIN,
+    FARM_MANAGER,
+    VET,
+    STORE,
     GENERAL_MANAGER,
     OPERATIONS_MANAGER,
-    FARM_MANAGER,
     VETERINARY_OFFICER,
     STORE_KEEPER,
     PHARMACY_SALES,

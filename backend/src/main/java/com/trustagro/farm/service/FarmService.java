@@ -8,9 +8,11 @@ import com.trustagro.farm.entity.Farm;
 import com.trustagro.farm.entity.FarmStatus;
 import com.trustagro.farm.repository.FarmRepository;
 import com.trustagro.user.entity.User;
+import com.trustagro.user.entity.Role;
 import com.trustagro.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,26 +24,31 @@ public class FarmService {
     private final FarmRepository farmRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public List<FarmResponse> getAll() {
         return farmRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public FarmResponse getById(Long id) {
         return toResponse(findById(id));
     }
 
+    @Transactional
     public FarmResponse create(FarmRequest req) {
         Farm farm = new Farm();
         mapRequest(req, farm);
         return toResponse(farmRepository.save(farm));
     }
 
+    @Transactional
     public FarmResponse update(Long id, FarmRequest req) {
         Farm farm = findById(id);
         mapRequest(req, farm);
         return toResponse(farmRepository.save(farm));
     }
 
+    @Transactional
     public FarmResponse updateStatus(Long id, FarmStatus status) {
         Farm farm = findById(id);
         farm.setStatus(status);
@@ -49,18 +56,23 @@ public class FarmService {
     }
 
     private void mapRequest(FarmRequest req, Farm farm) {
-        farm.setFarmName(req.getFarmName());
+        farm.setFarmName(req.getName());
         farm.setLocation(req.getLocation());
         farm.setFarmType(req.getFarmType());
         farm.setCapacity(req.getCapacity());
-        if (req.getAssignedFarmManagerId() != null) {
-            User manager = userRepository.findById(req.getAssignedFarmManagerId())
+        if (req.getManagerId() != null) {
+            User manager = userRepository.findById(req.getManagerId())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            if (manager.getRole() != Role.FARM_MANAGER) {
+                throw new BusinessException("Assigned manager must have FARM_MANAGER role");
+            }
             farm.setAssignedFarmManager(manager);
+        } else {
+            farm.setAssignedFarmManager(null);
         }
     }
 
-    private Farm findById(Long id) {
+    public Farm findById(Long id) {
         return farmRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm not found: " + id));
     }
@@ -68,7 +80,7 @@ public class FarmService {
     public FarmResponse toResponse(Farm farm) {
         FarmResponse r = new FarmResponse();
         r.setId(farm.getId());
-        r.setFarmName(farm.getFarmName());
+        r.setName(farm.getFarmName());
         r.setLocation(farm.getLocation());
         r.setFarmType(farm.getFarmType());
         r.setCapacity(farm.getCapacity());
@@ -76,8 +88,8 @@ public class FarmService {
         r.setCreatedAt(farm.getCreatedAt());
         r.setUpdatedAt(farm.getUpdatedAt());
         if (farm.getAssignedFarmManager() != null) {
-            r.setAssignedFarmManagerId(farm.getAssignedFarmManager().getId());
-            r.setAssignedFarmManagerName(farm.getAssignedFarmManager().getFullName());
+            r.setManagerId(farm.getAssignedFarmManager().getId());
+            r.setManagerName(farm.getAssignedFarmManager().getFullName());
         }
         return r;
     }

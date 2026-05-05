@@ -52,6 +52,9 @@ On first run, a default admin user is seeded:
 - **Email:** admin@trustagro.com
 - **Password:** Admin@1234
 
+Phase 1 API contract and sample JSON requests/responses are documented in
+[`backend/PHASE1_API.md`](backend/PHASE1_API.md).
+
 ---
 
 ## Running the Frontend
@@ -98,12 +101,21 @@ Trust ERP/
 
 ## Roles & Access
 
+Phase 1 uses these core roles:
+
+| Role         | Access                                      |
+|--------------|---------------------------------------------|
+| ADMIN        | User management, farm setup, full Phase 1 access |
+| FARM_MANAGER | Farm, flock, and daily production records   |
+| VET          | Daily health/production records and KPIs    |
+| STORE        | Farm and flock read access for store workflows |
+
+Legacy modules also keep these operational roles:
+
 | Role               | Access                                      |
 |--------------------|---------------------------------------------|
-| ADMIN              | Full access to everything                   |
 | GENERAL_MANAGER    | Dashboard, farms, finance, reports          |
 | OPERATIONS_MANAGER | Farms, flocks, daily records, inventory     |
-| FARM_MANAGER       | Farms, flocks, daily records                |
 | VETERINARY_OFFICER | Veterinary records, prescriptions           |
 | STORE_KEEPER       | Inventory, stock in/out                     |
 | PHARMACY_SALES     | Pharmacy sales, customers                   |

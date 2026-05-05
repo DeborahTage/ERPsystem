@@ -1,4 +1,53 @@
-# Getting Started with Create React App
+# Trust Agro Management System - Frontend
+
+React frontend for the Trust Agro Management System. Connects to the Spring Boot backend API.
+
+## Backend Connection
+
+The frontend connects to the Spring Boot backend at `http://localhost:8080` (configurable via `REACT_APP_API_URL`).
+
+### API Layer Structure
+
+```
+src/
+├── api/
+│   ├── axios.js          # Axios instance with JWT interceptors
+│   └── index.js          # API service functions
+├── context/
+│   └── AuthContext.js    # Authentication state & token management
+├── hooks/
+│   ├── useApi.js         # Data fetching hooks with loading/error states
+│   └── index.js          # Hook exports
+└── components/common/
+    ├── ErrorAlert.js     # Reusable error display
+    └── LoadingSpinner.js # Reusable loading indicator
+```
+
+### Authentication Flow
+
+1. **Login**: `POST /api/auth/login` → Stores JWT in `localStorage`
+2. **Token Usage**: Axios interceptor adds `Authorization: Bearer <token>` header
+3. **Auto Logout**: 401 responses clear storage and redirect to `/login`
+4. **Current User**: `GET /api/auth/me` validates token on app load
+
+### Phase 1 API Endpoints Used
+
+| Feature | Endpoint | Component |
+|---------|----------|-----------|
+| Dashboard Stats | `GET /api/farms`, `/api/flocks`, `/api/daily-farm-records` | Dashboard.js |
+| Farm List | `GET /api/farms` | FarmList.js |
+| Create Farm | `POST /api/farms` | FarmForm.js |
+| Flock List | `GET /api/flocks` | FlockList.js |
+| Create Flock | `POST /api/flocks` | FlockForm.js |
+| Daily Records | `GET/POST /api/daily-farm-records` | DailyFarmRecordList.js, DailyFarmRecordForm.js |
+
+### Environment Variables
+
+```
+REACT_APP_API_URL=http://localhost:8080
+```
+
+## Getting Started
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 

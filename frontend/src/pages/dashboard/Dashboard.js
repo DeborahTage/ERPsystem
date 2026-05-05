@@ -1,95 +1,155 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col } from 'react-bootstrap';
+import { Row, Col, Alert } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
-import { dashboardApi } from '../../api';
+import { farmApi, flockApi, dailyRecordApi } from '../../api';
 import StatCard from '../../components/common/StatCard';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatCurrency, ROLES } from '../../utils';
 
 const Dashboard = () => {
   const { user, hasRole } = useAuth();
-  const [data, setData] = useState({});
+  const [stats, setStats] = useState({
+    totalFarms: 0,
+    activeFarms: 0,
+    totalFlocks: 0,
+    activeFlocks: 0,
+    totalBirds: 0,
+    currentBirds: 0,
+    todayMortality: 0,
+    totalFeedUsed: 0,
+    totalEggProduction: 0,
+    avgMortalityRate: 0,
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        let res;
-        if (hasRole(ROLES.ADMIN, ROLES.GENERAL_MANAGER)) res = await dashboardApi.admin();
-        else if (hasRole(ROLES.FARM_MANAGER, ROLES.OPERATIONS_MANAGER)) res = await dashboardApi.farmManager();
-        else if (hasRole(ROLES.STORE_KEEPER)) res = await dashboardApi.store();
-        else if (hasRole(ROLES.VETERINARY_OFFICER)) res = await dashboardApi.vet();
-        else if (hasRole(ROLES.PHARMACY_SALES)) res = await dashboardApi.pharmacy();
-        else if (hasRole(ROLES.FINANCE_OFFICER)) res = await dashboardApi.finance();
-        if (res) setData(res.data.data);
-      } catch (e) {}
-      finally { setLoading(false); }
+        const [farmsRes, flocksRes, recordsRes] = await Promise.all([
+          farmApi.getAll(),
+          flockApi.getAll(),
+          dailyRecordApi.getAll(),
+        ]);
+
+        const farms = farmsRes.data?.data || [];
+        const flocks = flocksRes.data?.data || [];
+        const records = recordsRes.data?.data || [];
+
+        const today = new Date().toISOString().split('T')[0];
+        const todayRecords = records.filter(r => r.date === today);
+
+        const activeFarms = farms.filter(f => f.status === 'ACTIVE');
+        const activeFlocks = flocks.filter(f => f.status === 'ACTIVE');
+
+        const totalBirds = flocks.reduce((sum, f) => sum + (f.initialBirdCount || 0), 0);
+        const currentBirds = flocks.reduce((sum, f) => sum + (f.currentBirdCount || 0), 0);
+        const todayMortality = todayRecords.reduce((sum, r) => sum + (r.mortality || 0), 0);
+        const totalFeedUsed = records.reduce((sum, r) => sum + (r.feedConsumed || 0), 0);
+        const totalEggProduction = records.reduce((sum, r) => sum + (r.eggProduction || 0), 0);
+
+        const totalMortality = records.reduce((sum, r) => sum + (r.mortality || 0), 0);
+        const avgMortalityRate = totalBirds > 0 ? ((totalMortality / totalBirds) * 100).toFixed(2) : 0;
+
+        setStats({
+          totalFarms: farms.length,
+          activeFarms: activeFarms.length,
+          totalFlocks: flocks.length,
+          activeFlocks: activeFlocks.length,
+          totalBirds,
+          currentBirds,
+          todayMortality,
+          totalFeedUsed: totalFeedUsed.toFixed(2),
+          totalEggProduction,
+          avgMortalityRate,
+        });
+      } catch (err) {
+        setError('Failed to load dashboard data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchDashboard();
+
+    fetchDashboardData();
   }, []);
 
   const adminCards = [
-    { title: 'Active Farms', value: data.totalFarms ?? '-', icon: '🏡', color: 'success' },
-    { title: 'Active Flocks', value: data.totalActiveFlocks ?? '-', icon: '🐔', color: 'primary' },
-    { title: "Today's Mortality", value: data.todayMortality ?? 0, icon: '⚠️', color: 'danger' },
-    { title: "Today's Sales", value: formatCurrency(data.todayPharmacySales), icon: '💊', color: 'info' },
-    { title: 'Total Revenue', value: formatCurrency(data.totalRevenue), icon: '💰', color: 'success' },
-    { title: 'Total Expenses', value: formatCurrency(data.totalExpenses), icon: '📉', color: 'warning' },
-    { title: 'Net Profit/Loss', value: formatCurrency(data.netProfitLoss), icon: '📊', color: data.netProfitLoss >= 0 ? 'success' : 'danger' },
-    { title: 'Pending Alerts', value: data.pendingAlerts ?? 0, icon: '🔔', color: 'warning' },
+    { title: 'Total Farms', value: stats.totalFarms, icon: '🏡', color: 'success' },
+    { title: 'Active Farms', value: stats.activeFarms, icon: '🏠', color: 'primary' },
+    { title: 'Total Flocks', value: stats.totalFlocks, icon: '🐔', color: 'info' },
+    { title: 'Active Flocks', value: stats.activeFlocks, icon: '�', color: 'warning' },
+    { title: 'Total Birds', value: stats.totalBirds.toLocaleString(), icon: '�', color: 'success' },
+    { title: 'Current Birds', value: stats.currentBirds.toLocaleString(), icon: '✅', color: 'primary' },
+    { title: "Today's Mortality", value: stats.todayMortality, icon: '⚠️', color: 'danger' },
+    { title: 'Avg Mortality Rate', value: `${stats.avgMortalityRate}%`, icon: '�', color: stats.avgMortalityRate > 5 ? 'danger' : 'success' },
+    { title: 'Total Feed Used', value: `${stats.totalFeedUsed} kg`, icon: '🌾', color: 'info' },
+    { title: 'Total Eggs', value: stats.totalEggProduction.toLocaleString(), icon: '🥚', color: 'warning' },
   ];
 
-  const farmCards = [
-    { title: 'Active Farms', value: data.totalFarms ?? '-', icon: '🏡', color: 'success' },
-    { title: 'Active Flocks', value: data.activeFlocks ?? '-', icon: '🐔', color: 'primary' },
-    { title: "Today's Mortality", value: data.todayMortality ?? 0, icon: '⚠️', color: 'danger' },
-    { title: 'Upcoming Vaccinations', value: data.upcomingVaccinations ?? 0, icon: '💉', color: 'info' },
-  ];
-
-  const storeCards = [
-    { title: 'Total Items', value: data.totalItems ?? '-', icon: '📦', color: 'primary' },
-    { title: 'Expiring Items', value: data.expiringItems ?? 0, icon: '⏰', color: 'warning' },
+  const farmManagerCards = [
+    { title: 'My Farms', value: stats.activeFarms, icon: '🏡', color: 'success' },
+    { title: 'Active Flocks', value: stats.activeFlocks, icon: '🐔', color: 'primary' },
+    { title: 'Current Birds', value: stats.currentBirds.toLocaleString(), icon: '✅', color: 'info' },
+    { title: "Today's Mortality", value: stats.todayMortality, icon: '⚠️', color: 'danger' },
+    { title: 'Feed Used (Total)', value: `${stats.totalFeedUsed} kg`, icon: '🌾', color: 'warning' },
+    { title: 'Egg Production', value: stats.totalEggProduction.toLocaleString(), icon: '🥚', color: 'success' },
+    { title: 'Mortality Rate', value: `${stats.avgMortalityRate}%`, icon: '📉', color: stats.avgMortalityRate > 5 ? 'danger' : 'success' },
+    { title: 'Birds Lost', value: (stats.totalBirds - stats.currentBirds).toLocaleString(), icon: '�', color: 'secondary' },
   ];
 
   const vetCards = [
-    { title: 'Upcoming Vaccinations', value: data.upcomingVaccinations ?? 0, icon: '💉', color: 'primary' },
-    { title: 'Missed Vaccinations', value: data.missedVaccinations ?? 0, icon: '❌', color: 'danger' },
-    { title: 'Active Disease Cases', value: data.activeDiseaseCases ?? 0, icon: '🦠', color: 'warning' },
+    { title: 'Active Flocks', value: stats.activeFlocks, icon: '🐔', color: 'primary' },
+    { title: 'Current Birds', value: stats.currentBirds.toLocaleString(), icon: '✅', color: 'success' },
+    { title: "Today's Mortality", value: stats.todayMortality, icon: '⚠️', color: 'danger' },
+    { title: 'Mortality Rate', value: `${stats.avgMortalityRate}%`, icon: '📉', color: stats.avgMortalityRate > 5 ? 'danger' : 'warning' },
   ];
 
-  const pharmacyCards = [
-    { title: "Today's Sales", value: formatCurrency(data.todaySales), icon: '💊', color: 'success' },
-    { title: 'Total Sales', value: data.totalSalesCount ?? 0, icon: '🧾', color: 'primary' },
+  const storeCards = [
+    { title: 'Total Farms', value: stats.totalFarms, icon: '🏡', color: 'success' },
+    { title: 'Active Flocks', value: stats.activeFlocks, icon: '�', color: 'primary' },
+    { title: 'Feed Used', value: `${stats.totalFeedUsed} kg`, icon: '🌾', color: 'info' },
   ];
 
-  const financeCards = [
-    { title: 'Total Income', value: formatCurrency(data.totalIncome), icon: '💰', color: 'success' },
-    { title: 'Total Expenses', value: formatCurrency(data.totalExpenses), icon: '📉', color: 'danger' },
-    { title: 'Net Profit/Loss', value: formatCurrency(data.netProfitLoss), icon: '📊', color: 'primary' },
-  ];
+  let cards = adminCards;
+  if (hasRole(ROLES.FARM_MANAGER)) cards = farmManagerCards;
+  else if (hasRole(ROLES.VETERINARY_OFFICER, ROLES.VET)) cards = vetCards;
+  else if (hasRole(ROLES.STORE_KEEPER, ROLES.STORE)) cards = storeCards;
 
-  let cards = [];
-  if (hasRole(ROLES.ADMIN, ROLES.GENERAL_MANAGER)) cards = adminCards;
-  else if (hasRole(ROLES.FARM_MANAGER, ROLES.OPERATIONS_MANAGER)) cards = farmCards;
-  else if (hasRole(ROLES.STORE_KEEPER)) cards = storeCards;
-  else if (hasRole(ROLES.VETERINARY_OFFICER)) cards = vetCards;
-  else if (hasRole(ROLES.PHARMACY_SALES)) cards = pharmacyCards;
-  else if (hasRole(ROLES.FINANCE_OFFICER)) cards = financeCards;
+  if (loading) {
+    return (
+      <div>
+        <h5 className="fw-bold mb-1">Dashboard</h5>
+        <p className="text-muted small mb-4">Welcome back, {user?.fullName}</p>
+        <LoadingSpinner text="Loading dashboard data..." />
+      </div>
+    );
+  }
 
   return (
     <div>
       <h5 className="fw-bold mb-1">Dashboard</h5>
       <p className="text-muted small mb-4">Welcome back, {user?.fullName}</p>
-      {loading ? (
-        <p className="text-muted">Loading...</p>
-      ) : (
-        <Row className="g-3">
-          {cards.map((card, i) => (
-            <Col key={i} xs={12} sm={6} lg={3}>
-              <StatCard {...card} />
-            </Col>
-          ))}
-        </Row>
+      
+      {error && (
+        <Alert variant="danger" className="mb-4">
+          {error}
+          <div className="mt-2">
+            <button className="btn btn-sm btn-outline-danger" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        </Alert>
       )}
+      
+      <Row className="g-3">
+        {cards.map((card, i) => (
+          <Col key={i} xs={12} sm={6} lg={3}>
+            <StatCard {...card} />
+          </Col>
+        ))}
+      </Row>
     </div>
   );
 };

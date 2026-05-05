@@ -32,6 +32,8 @@ public class UserService {
     public UserResponse create(UserRequest req) {
         if (userRepository.existsByEmail(req.getEmail()))
             throw new BusinessException("Email already in use");
+        if (req.getPassword() == null || req.getPassword().isBlank())
+            throw new BusinessException("Password is required");
         User user = new User();
         user.setFullName(req.getFullName());
         user.setEmail(req.getEmail());

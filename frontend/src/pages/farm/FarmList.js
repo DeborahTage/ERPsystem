@@ -4,14 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { farmApi } from '../../api';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
+import ErrorAlert from '../../components/common/ErrorAlert';
 
 const FarmList = () => {
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    farmApi.getAll().then(r => setFarms(r.data.data)).finally(() => setLoading(false));
+    setLoading(true);
+    setError(null);
+    farmApi.getAll()
+      .then(r => setFarms(r.data.data || []))
+      .catch(err => setError(err.response?.data?.message || 'Failed to load farms'))
+      .finally(() => setLoading(false));
   }, []);
 
   const columns = [
@@ -35,6 +42,7 @@ const FarmList = () => {
         <h5 className="fw-bold mb-0">Farms</h5>
         <Button variant="success" size="sm" onClick={() => navigate('/farms/new')}>+ Add Farm</Button>
       </div>
+      <ErrorAlert message={error} onDismiss={() => setError(null)} />
       <Card className="border-0 shadow-sm">
         <Card.Body>
           <DataTable columns={columns} data={farms} loading={loading} />

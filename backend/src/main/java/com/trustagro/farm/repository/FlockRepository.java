@@ -10,4 +10,6 @@ public interface FlockRepository extends JpaRepository<Flock, Long> {
     List<Flock> findByFarmId(Long farmId);
     List<Flock> findByStatus(FlockStatus status);
     long countByStatus(FlockStatus status);
+    boolean existsByBatchCode(String batchCode);
+    boolean existsByBatchCodeAndIdNot(String batchCode, Long id);
 }

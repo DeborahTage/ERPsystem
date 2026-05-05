@@ -1,5 +1,6 @@
 package com.trustagro.farm.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -17,14 +18,29 @@ public class DailyFarmRecordResponse {
     private Integer openingBirdCount;
     private Integer mortality;
     private Integer culledBirds;
-    private BigDecimal feedConsumed;
-    private BigDecimal waterConsumed;
+    private BigDecimal feedIntake;
+    private BigDecimal waterIntake;
     private BigDecimal averageWeight;
     private Integer eggProduction;
     private Integer damagedEggs;
-    private String symptomsOrRemarks;
+    private String remarks;
     private String recordedBy;
     private Double mortalityRate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @JsonProperty("feedConsumed")
+    public BigDecimal getFeedConsumed() {
+        return feedIntake;
+    }
+
+    @JsonProperty("waterConsumed")
+    public BigDecimal getWaterConsumed() {
+        return waterIntake;
+    }
+
+    @JsonProperty("symptomsOrRemarks")
+    public String getSymptomsOrRemarks() {
+        return remarks;
+    }
 }

@@ -15,14 +15,36 @@ const DailyFarmRecordForm = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    farmApi.getAll().then(r => setFarms(r.data.data?.filter(f => f.status === 'ACTIVE') || []));
-    if (isEdit) {
-      dailyRecordApi.getById(id).then(r => {
-        const d = r.data.data;
-        setForm({ date: d.date, farmId: d.farmId, flockId: d.flockId, openingBirdCount: d.openingBirdCount || '', mortality: d.mortality || 0, culledBirds: d.culledBirds || 0, feedConsumed: d.feedConsumed || '', waterConsumed: d.waterConsumed || '', averageWeight: d.averageWeight || '', eggProduction: d.eggProduction || 0, damagedEggs: d.damagedEggs || 0, symptomsOrRemarks: d.symptomsOrRemarks || '' });
-        flockApi.getAll().then(fr => setFlocks(fr.data.data?.filter(f => f.farmId === d.farmId) || []));
-      });
-    }
+    const loadData = async () => {
+      try {
+        const farmsRes = await farmApi.getAll();
+        setFarms(farmsRes.data.data?.filter(f => f.status === 'ACTIVE') || []);
+        
+        if (isEdit) {
+          const recordRes = await dailyRecordApi.getById(id);
+          const d = recordRes.data.data;
+          setForm({ 
+            date: d.date, 
+            farmId: d.farmId, 
+            flockId: d.flockId, 
+            openingBirdCount: d.openingBirdCount || '', 
+            mortality: d.mortality || 0, 
+            culledBirds: d.culledBirds || 0, 
+            feedConsumed: d.feedConsumed || '', 
+            waterConsumed: d.waterConsumed || '', 
+            averageWeight: d.averageWeight || '', 
+            eggProduction: d.eggProduction || 0, 
+            damagedEggs: d.damagedEggs || 0, 
+            symptomsOrRemarks: d.symptomsOrRemarks || '' 
+          });
+          const flocksRes = await flockApi.getAll();
+          setFlocks(flocksRes.data.data?.filter(f => f.farmId === d.farmId) || []);
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load data');
+      }
+    };
+    loadData();
   }, [id]);
 
   const handleFarmChange = (farmId) => {
