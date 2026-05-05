@@ -8,7 +8,7 @@ import com.trustagro.farm.entity.Farm;
 import com.trustagro.farm.entity.FarmStatus;
 import com.trustagro.farm.repository.FarmRepository;
 import com.trustagro.user.entity.User;
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import com.trustagro.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -63,7 +63,7 @@ public class FarmService {
         if (req.getManagerId() != null) {
             User manager = userRepository.findById(req.getManagerId())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            if (manager.getRole() != Role.FARM_MANAGER) {
+            if (manager.getRole() != RoleName.FARM_MANAGER && !manager.hasRole(RoleName.FARM_MANAGER)) {
                 throw new BusinessException("Assigned manager must have FARM_MANAGER role");
             }
             farm.setAssignedFarmManager(manager);

@@ -1,12 +1,14 @@
 package com.trustagro.user.dto;
 
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import com.trustagro.user.entity.UserStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.ToString;
+
+import java.util.Set;
 
 @Data
 public class UserRequest {
@@ -18,5 +20,6 @@ public class UserRequest {
     @ToString.Exclude
     private String password;
     @NotNull
-    private Role role;
+    private RoleName role;
+    private Set<RoleName> additionalRoles;
 }

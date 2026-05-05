@@ -1,8 +1,10 @@
 package com.trustagro.auth.dto;
 
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -13,5 +15,6 @@ public class LoginResponse {
     private Long userId;
     private String fullName;
     private String email;
-    private Role role;
+    private RoleName role;
+    private Set<String> roles;
 }

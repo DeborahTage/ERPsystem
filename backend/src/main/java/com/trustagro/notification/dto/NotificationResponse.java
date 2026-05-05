@@ -1,7 +1,7 @@
 package com.trustagro.notification.dto;
 
 import com.trustagro.notification.entity.NotificationType;
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -12,7 +12,7 @@ public class NotificationResponse {
     private String title;
     private String message;
     private NotificationType type;
-    private Role targetRole;
+    private RoleName targetRole;
     private String relatedModule;
     private boolean isRead;
     private LocalDateTime createdAt;

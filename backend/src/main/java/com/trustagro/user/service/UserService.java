@@ -4,14 +4,18 @@ import com.trustagro.common.exception.BusinessException;
 import com.trustagro.common.exception.ResourceNotFoundException;
 import com.trustagro.user.dto.UserRequest;
 import com.trustagro.user.dto.UserResponse;
+import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import com.trustagro.user.entity.User;
 import com.trustagro.user.entity.UserStatus;
+import com.trustagro.user.repository.RoleRepository;
 import com.trustagro.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,6 +23,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     public List<UserResponse> getAll() {
@@ -40,6 +45,7 @@ public class UserService {
         user.setPhone(req.getPhone());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setRole(req.getRole());
+        assignRoles(user, req.getRole(), req.getAdditionalRoles());
         return toResponse(userRepository.save(user));
     }
 
@@ -48,9 +54,22 @@ public class UserService {
         user.setFullName(req.getFullName());
         user.setPhone(req.getPhone());
         user.setRole(req.getRole());
+        assignRoles(user, req.getRole(), req.getAdditionalRoles());
         if (req.getPassword() != null && !req.getPassword().isBlank())
             user.setPassword(passwordEncoder.encode(req.getPassword()));
         return toResponse(userRepository.save(user));
+    }
+
+    private void assignRoles(User user, RoleName primaryRole, Set<RoleName> additionalRoles) {
+        user.getRoles().clear();
+        // Always assign primary role
+        roleRepository.findByName(primaryRole).ifPresent(user.getRoles()::add);
+        // Assign additional roles if provided
+        if (additionalRoles != null) {
+            for (RoleName rn : additionalRoles) {
+                roleRepository.findByName(rn).ifPresent(user.getRoles()::add);
+            }
+        }
     }
 
     public UserResponse updateStatus(Long id, UserStatus status) {
@@ -71,6 +90,12 @@ public class UserService {
         r.setEmail(user.getEmail());
         r.setPhone(user.getPhone());
         r.setRole(user.getRole());
+        if (user.getRoles() != null) {
+            r.setRoles(user.getRoles().stream()
+                    .map(rm -> rm.getName() != null ? rm.getName().name() : null)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet()));
+        }
         r.setStatus(user.getStatus());
         r.setCreatedAt(user.getCreatedAt());
         r.setUpdatedAt(user.getUpdatedAt());

@@ -20,11 +20,13 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @GetMapping("/items")
+    @PreAuthorize("hasAnyRole('ADMIN','STORE_KEEPER','OPERATIONS_MANAGER','FARM_MANAGER','PHARMACY_SALES')")
     public ResponseEntity<ApiResponse<List<InventoryItemResponse>>> getItems() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getAllItems()));
     }
 
     @GetMapping("/items/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','STORE_KEEPER','OPERATIONS_MANAGER','FARM_MANAGER','PHARMACY_SALES')")
     public ResponseEntity<ApiResponse<InventoryItemResponse>> getItem(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getItemById(id)));
     }
@@ -56,16 +58,19 @@ public class InventoryController {
     }
 
     @GetMapping("/current-stock")
+    @PreAuthorize("hasAnyRole('ADMIN','STORE_KEEPER','OPERATIONS_MANAGER','FARM_MANAGER','PHARMACY_SALES')")
     public ResponseEntity<ApiResponse<List<InventoryItemResponse>>> getCurrentStock() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getAllItems()));
     }
 
     @GetMapping("/low-stock")
+    @PreAuthorize("hasAnyRole('ADMIN','STORE_KEEPER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<List<InventoryItemResponse>>> getLowStock() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getLowStockItems()));
     }
 
     @GetMapping("/expiry-alerts")
+    @PreAuthorize("hasAnyRole('ADMIN','STORE_KEEPER','OPERATIONS_MANAGER','PHARMACY_SALES')")
     public ResponseEntity<ApiResponse<List<StockBatch>>> getExpiryAlerts() {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.getExpiringItems()));
     }

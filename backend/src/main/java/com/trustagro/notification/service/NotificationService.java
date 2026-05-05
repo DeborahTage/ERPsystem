@@ -5,7 +5,7 @@ import com.trustagro.notification.dto.NotificationResponse;
 import com.trustagro.notification.entity.Notification;
 import com.trustagro.notification.entity.NotificationType;
 import com.trustagro.notification.repository.NotificationRepository;
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,42 +21,42 @@ public class NotificationService {
     public void createMortalityAlert(String farmName, String batchCode, double rate) {
         create("High Mortality Alert",
                 String.format("Farm: %s, Batch: %s - Mortality rate %.1f%% exceeds threshold", farmName, batchCode, rate),
-                NotificationType.URGENT, Role.VETERINARY_OFFICER, "FARM", null);
+                NotificationType.URGENT, RoleName.VETERINARY_OFFICER, "FARM", null);
         create("High Mortality Alert",
                 String.format("Farm: %s, Batch: %s - Mortality rate %.1f%% exceeds threshold", farmName, batchCode, rate),
-                NotificationType.URGENT, Role.OPERATIONS_MANAGER, "FARM", null);
+                NotificationType.URGENT, RoleName.OPERATIONS_MANAGER, "FARM", null);
     }
 
     public void createLowStockAlert(String itemName, double currentStock, String unit) {
         create("Low Stock Alert",
                 String.format("Item: %s - Current stock %.1f %s is below minimum level", itemName, currentStock, unit),
-                NotificationType.WARNING, Role.STORE_KEEPER, "INVENTORY", null);
+                NotificationType.WARNING, RoleName.STORE_KEEPER, "INVENTORY", null);
     }
 
     public void createExpiryAlert(String itemName, String expiryDate) {
         create("Expiry Alert",
                 String.format("Item: %s expires on %s (within 30 days)", itemName, expiryDate),
-                NotificationType.WARNING, Role.STORE_KEEPER, "INVENTORY", null);
+                NotificationType.WARNING, RoleName.STORE_KEEPER, "INVENTORY", null);
     }
 
     public void createMissedVaccinationAlert(String farmName, String vaccineName) {
         create("Missed Vaccination",
                 String.format("Farm: %s - Vaccination '%s' was missed", farmName, vaccineName),
-                NotificationType.WARNING, Role.VETERINARY_OFFICER, "VETERINARY", null);
+                NotificationType.WARNING, RoleName.VETERINARY_OFFICER, "VETERINARY", null);
     }
 
     public void createFollowUpAlert(String clientName, Long clientId) {
         create("CRM Follow-up Due",
                 String.format("Follow-up due for client: %s", clientName),
-                NotificationType.INFO, Role.EXTENSION_WORKER, "CRM", clientId);
+                NotificationType.INFO, RoleName.EXTENSION_WORKER, "CRM", clientId);
     }
 
-    private void create(String title, String message, NotificationType type, Role role, String module, Long relatedId) {
+    private void create(String title, String message, NotificationType type, RoleName roleName, String module, Long relatedId) {
         Notification n = new Notification();
         n.setTitle(title);
         n.setMessage(message);
         n.setType(type);
-        n.setTargetRole(role);
+        n.setTargetRole(roleName);
         n.setRelatedModule(module);
         n.setRelatedId(relatedId);
         notificationRepository.save(n);

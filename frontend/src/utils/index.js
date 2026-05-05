@@ -1,3 +1,7 @@
+// Re-export all RBAC utilities for backward compatibility
+export * from './rbac';
+
+// Keep old exports for backward compatibility
 export const ROLES = {
   ADMIN: 'ADMIN',
   GENERAL_MANAGER: 'GENERAL_MANAGER',

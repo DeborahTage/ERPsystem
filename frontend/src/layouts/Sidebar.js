@@ -1,31 +1,46 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ROLES } from '../utils';
-import { Navbar, Nav, Container, Button, Badge, Offcanvas } from 'react-bootstrap';
+import { ROLES, ROLE_GROUPS } from '../utils/rbac';
+import { Nav, Button, Offcanvas } from 'react-bootstrap';
 
+/**
+ * Menu items with RBAC permissions
+ * roles: null = visible to all, string[] = visible to any of these roles
+ */
 const menuItems = [
-  { path: '/dashboard', label: '📊 Dashboard', roles: null },
-  { path: '/users', label: '👥 Users', roles: [ROLES.ADMIN, ROLES.GENERAL_MANAGER] },
-  { path: '/farms', label: '🏡 Farms', roles: [ROLES.ADMIN, ROLES.GENERAL_MANAGER, ROLES.OPERATIONS_MANAGER, ROLES.FARM_MANAGER] },
-  { path: '/flocks', label: '🐔 Flocks', roles: [ROLES.ADMIN, ROLES.GENERAL_MANAGER, ROLES.OPERATIONS_MANAGER, ROLES.FARM_MANAGER] },
-  { path: '/daily-records', label: '📋 Daily Records', roles: [ROLES.ADMIN, ROLES.FARM_MANAGER, ROLES.OPERATIONS_MANAGER] },
-  { path: '/inventory', label: '📦 Inventory', roles: [ROLES.ADMIN, ROLES.STORE_KEEPER, ROLES.OPERATIONS_MANAGER, ROLES.GENERAL_MANAGER] },
-  { path: '/veterinary', label: '💉 Veterinary', roles: [ROLES.ADMIN, ROLES.VETERINARY_OFFICER, ROLES.FARM_MANAGER] },
-  { path: '/pharmacy', label: '💊 Pharmacy', roles: [ROLES.ADMIN, ROLES.PHARMACY_SALES, ROLES.GENERAL_MANAGER] },
-  { path: '/finance', label: '💰 Finance', roles: [ROLES.ADMIN, ROLES.FINANCE_OFFICER, ROLES.GENERAL_MANAGER] },
-  { path: '/crm', label: '🤝 CRM', roles: [ROLES.ADMIN, ROLES.EXTENSION_WORKER, ROLES.OPERATIONS_MANAGER, ROLES.GENERAL_MANAGER] },
-  { path: '/reports', label: '📈 Reports', roles: [ROLES.ADMIN, ROLES.GENERAL_MANAGER, ROLES.OPERATIONS_MANAGER] },
-  { path: '/settings', label: '⚙️ Settings', roles: null },
+  { path: '/dashboard', label: '📊 Dashboard', key: 'dashboard', roles: null },
+  { path: '/users', label: '👥 Users', key: 'users', roles: [ROLES.ADMIN] },
+  { path: '/farms', label: '🏡 Farms', key: 'farms', roles: [ROLES.ADMIN, ROLES.GENERAL_MANAGER, ROLES.OPERATIONS_MANAGER, ROLES.FARM_MANAGER, ROLES.VET, ROLES.VETERINARY_OFFICER, ROLES.STORE, ROLES.STORE_KEEPER] },
+  { path: '/flocks', label: '🐔 Flocks', key: 'flocks', roles: [ROLES.ADMIN, ROLES.GENERAL_MANAGER, ROLES.OPERATIONS_MANAGER, ROLES.FARM_MANAGER] },
+  { path: '/daily-records', label: '📋 Daily Records', key: 'daily-records', roles: [ROLES.ADMIN, ROLES.FARM_MANAGER, ROLES.OPERATIONS_MANAGER, ROLES.VET, ROLES.VETERINARY_OFFICER] },
+  { path: '/inventory', label: '📦 Inventory', key: 'inventory', roles: [ROLES.ADMIN, ROLES.STORE_KEEPER, ROLES.STORE, ROLES.OPERATIONS_MANAGER, ROLES.FARM_MANAGER, ROLES.PHARMACY_SALES] },
+  { path: '/veterinary', label: '💉 Veterinary', key: 'veterinary', roles: [ROLES.ADMIN, ROLES.VETERINARY_OFFICER, ROLES.VET, ROLES.FARM_MANAGER] },
+  { path: '/pharmacy', label: '💊 Pharmacy', key: 'pharmacy', roles: [ROLES.ADMIN, ROLES.PHARMACY_SALES, ROLES.PHARMACY, ROLES.GENERAL_MANAGER, ROLES.FINANCE_OFFICER] },
+  { path: '/finance', label: '💰 Finance', key: 'finance', roles: [ROLES.ADMIN, ROLES.FINANCE_OFFICER, ROLES.FINANCE, ROLES.GENERAL_MANAGER] },
+  { path: '/crm', label: '🤝 CRM', key: 'crm', roles: [ROLES.ADMIN, ROLES.EXTENSION_WORKER, ROLES.OPERATIONS_MANAGER, ROLES.GENERAL_MANAGER] },
+  { path: '/reports', label: '📈 Reports', key: 'reports', roles: ROLE_GROUPS.MANAGERS },
+  { path: '/settings', label: '⚙️ Settings', key: 'settings', roles: null },
 ];
 
+/**
+ * Sidebar Component
+ * Displays navigation menu filtered by user roles
+ */
 const Sidebar = ({ show, onHide }) => {
-  const { user, logout, hasRole } = useAuth();
+  const { user, userRoles, logout, hasAnyRole } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => { 
+    logout(); 
+    navigate('/login'); 
+  };
 
-  const visibleItems = menuItems.filter(item => !item.roles || hasRole(...item.roles));
+  // Filter menu items based on user's roles
+  const visibleItems = menuItems.filter(item => {
+    if (!item.roles) return true; // Public menu item
+    return hasAnyRole(...item.roles);
+  });
 
   const sidebarContent = (
     <div className="d-flex flex-column h-100">
@@ -48,8 +63,13 @@ const Sidebar = ({ show, onHide }) => {
         ))}
       </Nav>
       <div className="p-3 border-top">
-        <div className="small text-muted mb-1">{user?.fullName}</div>
-        <div className="small text-muted mb-2">{user?.role?.replace('_', ' ')}</div>
+        <div className="small fw-semibold text-dark mb-1">{user?.fullName}</div>
+        <div className="small text-muted mb-2" style={{ fontSize: '0.75rem' }}>
+          {userRoles?.length > 0 
+            ? userRoles.map(r => r.replace(/_/g, ' ')).join(', ')
+            : user?.role?.replace(/_/g, ' ')
+          }
+        </div>
         <Button variant="outline-danger" size="sm" className="w-100" onClick={handleLogout}>
           Logout
         </Button>

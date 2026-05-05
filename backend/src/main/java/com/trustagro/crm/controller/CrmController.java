@@ -19,11 +19,13 @@ public class CrmController {
     private final CrmService crmService;
 
     @GetMapping("/clients")
+    @PreAuthorize("hasAnyRole('ADMIN','EXTENSION_WORKER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<List<CrmClientResponse>>> getClients() {
         return ResponseEntity.ok(ApiResponse.success(crmService.getAllClients()));
     }
 
     @GetMapping("/clients/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','EXTENSION_WORKER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<CrmClientResponse>> getClient(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(crmService.getClientById(id)));
     }
@@ -41,6 +43,7 @@ public class CrmController {
     }
 
     @GetMapping("/farm-visits")
+    @PreAuthorize("hasAnyRole('ADMIN','EXTENSION_WORKER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<List<FarmVisitResponse>>> getVisits(@RequestParam(required = false) Long clientId) {
         if (clientId != null) return ResponseEntity.ok(ApiResponse.success(crmService.getVisitsByClient(clientId)));
         return ResponseEntity.ok(ApiResponse.success(crmService.getAllVisits()));
@@ -53,6 +56,7 @@ public class CrmController {
     }
 
     @GetMapping("/follow-ups")
+    @PreAuthorize("hasAnyRole('ADMIN','EXTENSION_WORKER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<List<FarmVisitResponse>>> getDueFollowUps() {
         return ResponseEntity.ok(ApiResponse.success(crmService.getDueFollowUps()));
     }

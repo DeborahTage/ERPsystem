@@ -20,6 +20,7 @@ public class PharmacyController {
     private final PharmacyService pharmacyService;
 
     @GetMapping("/customers")
+    @PreAuthorize("hasAnyRole('ADMIN','PHARMACY_SALES','FINANCE_OFFICER')")
     public ResponseEntity<ApiResponse<List<PharmacyCustomer>>> getCustomers() {
         return ResponseEntity.ok(ApiResponse.success(pharmacyService.getAllCustomers()));
     }
@@ -43,6 +44,7 @@ public class PharmacyController {
     }
 
     @GetMapping("/sales/{id}/receipt")
+    @PreAuthorize("hasAnyRole('ADMIN','PHARMACY_SALES','FINANCE_OFFICER')")
     public ResponseEntity<ApiResponse<SaleResponse>> getReceipt(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(pharmacyService.getSaleById(id)));
     }

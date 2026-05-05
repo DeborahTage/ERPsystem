@@ -19,6 +19,7 @@ public class VeterinaryController {
     private final VeterinaryService vetService;
 
     @GetMapping("/vaccinations")
+    @PreAuthorize("hasAnyRole('ADMIN','VETERINARY_OFFICER','FARM_MANAGER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<List<VaccinationResponse>>> getVaccinations() {
         return ResponseEntity.ok(ApiResponse.success(vetService.getAllVaccinations()));
     }
@@ -36,6 +37,7 @@ public class VeterinaryController {
     }
 
     @GetMapping("/disease-cases")
+    @PreAuthorize("hasAnyRole('ADMIN','VETERINARY_OFFICER','FARM_MANAGER','OPERATIONS_MANAGER')")
     public ResponseEntity<ApiResponse<List<DiseaseCaseResponse>>> getDiseaseCases() {
         return ResponseEntity.ok(ApiResponse.success(vetService.getAllDiseaseCases()));
     }
@@ -53,6 +55,7 @@ public class VeterinaryController {
     }
 
     @GetMapping("/treatments")
+    @PreAuthorize("hasAnyRole('ADMIN','VETERINARY_OFFICER','FARM_MANAGER')")
     public ResponseEntity<ApiResponse<List<TreatmentResponse>>> getTreatments() {
         return ResponseEntity.ok(ApiResponse.success(vetService.getAllTreatments()));
     }
@@ -64,6 +67,7 @@ public class VeterinaryController {
     }
 
     @GetMapping("/prescriptions")
+    @PreAuthorize("hasAnyRole('ADMIN','VETERINARY_OFFICER','PHARMACY_SALES','FARM_MANAGER')")
     public ResponseEntity<ApiResponse<List<PrescriptionResponse>>> getPrescriptions() {
         return ResponseEntity.ok(ApiResponse.success(vetService.getAllPrescriptions()));
     }

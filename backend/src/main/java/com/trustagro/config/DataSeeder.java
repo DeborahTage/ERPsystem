@@ -1,6 +1,6 @@
 package com.trustagro.config;
 
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import com.trustagro.user.entity.User;
 import com.trustagro.user.entity.UserStatus;
 import com.trustagro.user.repository.UserRepository;
@@ -26,7 +26,7 @@ public class DataSeeder implements CommandLineRunner {
             admin.setEmail("admin@trustagro.com");
             admin.setPhone("+233000000000");
             admin.setPassword(passwordEncoder.encode("Admin@1234"));
-            admin.setRole(Role.ADMIN);
+            admin.setRole(RoleName.ADMIN);
             admin.setStatus(UserStatus.ACTIVE);
             userRepository.save(admin);
             log.info("Default admin user created: admin@trustagro.com / Admin@1234");

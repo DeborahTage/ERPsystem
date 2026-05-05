@@ -1,6 +1,6 @@
 package com.trustagro.notification.entity;
 
-import com.trustagro.user.entity.Role;
+import com.trustagro.user.entity.RoleName;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,7 +26,7 @@ public class Notification {
     private NotificationType type = NotificationType.INFO;
 
     @Enumerated(EnumType.STRING)
-    private Role targetRole;
+    private RoleName targetRole;
 
     private Long targetUserId;
 
