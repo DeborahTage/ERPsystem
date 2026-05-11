@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
-import MainLayout from './layouts/MainLayout';
+import AppShell from './components/layout/AppShell';
 import { ROLES, ROLE_GROUPS } from './utils/rbac';
 
 import Login from './pages/auth/Login';
@@ -54,14 +54,15 @@ const CRM_ROLES = [ROLES.ADMIN, ROLES.EXTENSION_WORKER, ROLES.OPERATIONS_MANAGER
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <LanguageProvider>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public route */}
           <Route path="/login" element={<Login />} />
           
-          {/* Protected routes with MainLayout */}
-          <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          {/* Protected routes with AppShell */}
+          <Route path="/" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             
             {/* Dashboard - accessible to all authenticated users */}
@@ -129,7 +130,8 @@ function App() {
         </Routes>
       </BrowserRouter>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

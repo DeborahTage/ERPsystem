@@ -17,7 +17,7 @@ export const ROLES = {
 export const ADMIN_ROLES = [ROLES.ADMIN, ROLES.GENERAL_MANAGER, ROLES.OPERATIONS_MANAGER];
 
 export const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(amount || 0);
+  new Intl.NumberFormat('am-ET', { style: 'currency', currency: 'ETB' }).format(amount || 0);
 
 export const formatDate = (date) =>
   date ? new Date(date).toLocaleDateString('en-GB') : '-';

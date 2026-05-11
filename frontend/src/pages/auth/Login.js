@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
 
 const Login = () => {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -19,9 +21,9 @@ const Login = () => {
       navigate('/dashboard');
     } catch (err) {
       if (err.code === 'ECONNABORTED' || !err.response) {
-        setError('Cannot reach the backend server. Make sure the backend is running on the expected port.');
+        setError(t('auth.cannotReachBackend'));
       } else {
-        setError(err.response?.data?.message || 'Login failed. Check your credentials.');
+        setError(err.response?.data?.message || t('auth.invalidCredentials'));
       }
     } finally {
       setLoading(false);
@@ -35,36 +37,36 @@ const Login = () => {
           <Col xs={12} sm={8} md={5} lg={4}>
             <div className="text-center mb-4">
               <div className="fs-1">🌿</div>
-              <h4 className="fw-bold text-success">Trust Agro</h4>
-              <p className="text-muted small">Consulting & Farming Management System</p>
+              <h4 className="fw-bold text-success">{t('common.appName')}</h4>
+              <p className="text-muted small">{t('common.tagline')}</p>
             </div>
             <Card className="shadow-sm border-0">
               <Card.Body className="p-4">
-                <h5 className="mb-4 fw-semibold">Sign In</h5>
+                <h5 className="mb-4 fw-semibold">{t('auth.login')}</h5>
                 {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="small fw-semibold">Email</Form.Label>
+                    <Form.Label className="small fw-semibold">{t('auth.email')}</Form.Label>
                     <Form.Control
                       type="email"
-                      placeholder="Enter email"
+                      placeholder={t('auth.email')}
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       required
                     />
                   </Form.Group>
                   <Form.Group className="mb-4">
-                    <Form.Label className="small fw-semibold">Password</Form.Label>
+                    <Form.Label className="small fw-semibold">{t('auth.password')}</Form.Label>
                     <Form.Control
                       type="password"
-                      placeholder="Enter password"
+                      placeholder={t('auth.password')}
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       required
                     />
                   </Form.Group>
                   <Button type="submit" variant="success" className="w-100" disabled={loading}>
-                    {loading ? 'Signing in...' : 'Sign In'}
+                    {loading ? t('auth.signingIn') : t('auth.login')}
                   </Button>
                 </Form>
               </Card.Body>
