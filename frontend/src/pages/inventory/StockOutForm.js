@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { inventoryApi } from '../../api';
-import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input, Select, Textarea } from '../../components/ui/Input';
 
 const StockOutForm = () => {
   const navigate = useNavigate();
@@ -16,37 +17,79 @@ const StockOutForm = () => {
     inventoryApi.getItems().then(r => setItems(r.data.data || []));
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     try {
-      await inventoryApi.stockOut({ ...form, itemId: Number(form.itemId), quantity: Number(form.quantity) });
-      toast.success('Stock out recorded');
+      await inventoryApi.stockOut({
+        ...form,
+        itemId: Number(form.itemId),
+        quantity: Number(form.quantity),
+      });
       navigate('/inventory');
     } catch (err) {
-      setError(err.response?.data?.message || 'Error recording stock out');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || 'Unable to record stock out.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h5 className="fw-bold mb-3">Stock Out</h5>
-      <Card className="border-0 shadow-sm" style={{ maxWidth: 500 }}>
-        <Card.Body className="p-4">
-          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row className="g-3">
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Item *</Form.Label><Form.Select value={form.itemId} onChange={e => setForm({ ...form, itemId: e.target.value })} required><option value="">-- Select Item --</option>{items.map(i => <option key={i.id} value={i.id}>{i.itemName} (Stock: {i.currentStock})</option>)}</Form.Select></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Quantity *</Form.Label><Form.Control type="number" min="0.01" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required /></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Issued To</Form.Label><Form.Select value={form.issuedToType} onChange={e => setForm({ ...form, issuedToType: e.target.value })}>{['FARM','DEPARTMENT','CUSTOMER','INTERNAL'].map(t => <option key={t}>{t}</option>)}</Form.Select></Form.Group></Col>
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Reason</Form.Label><Form.Control value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></Form.Group></Col>
-            </Row>
-            <div className="d-flex gap-2 mt-4">
-              <Button type="submit" variant="warning" disabled={loading}>{loading ? 'Saving...' : 'Record Stock Out'}</Button>
-              <Button variant="outline-secondary" onClick={() => navigate('/inventory')}>Cancel</Button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Stock Out</h1>
+        <p className="text-sm text-gray-500">Capture inventory issuance details for internal or external use.</p>
+      </div>
+
+      {error && <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <Card className="max-w-3xl">
+        <CardHeader>
+          <CardTitle>Stock Out Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Select
+                label="Item"
+                value={form.itemId}
+                onChange={e => setForm({ ...form, itemId: e.target.value })}
+                options={[{ value: '', label: '-- Select Item --' }, ...items.map(item => ({ value: String(item.id), label: `${item.itemName} (Stock: ${item.currentStock})` }))]}
+                required
+              />
+              <Input
+                label="Quantity"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.quantity}
+                onChange={e => setForm({ ...form, quantity: e.target.value })}
+                required
+              />
+              <Select
+                label="Issued To"
+                value={form.issuedToType}
+                onChange={e => setForm({ ...form, issuedToType: e.target.value })}
+                options={['FARM', 'DEPARTMENT', 'CUSTOMER', 'INTERNAL'].map(value => ({ value, label: value }))}
+              />
+              <Input
+                label="Department"
+                value={form.department}
+                onChange={e => setForm({ ...form, department: e.target.value })}
+              />
             </div>
-          </Form>
-        </Card.Body>
+            <Textarea
+              label="Reason"
+              rows={3}
+              value={form.reason}
+              onChange={e => setForm({ ...form, reason: e.target.value })}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" variant="primary" className="w-full sm:w-auto" disabled={loading}>{loading ? 'Saving...' : 'Record Stock Out'}</Button>
+              <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => navigate('/inventory')}>Cancel</Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

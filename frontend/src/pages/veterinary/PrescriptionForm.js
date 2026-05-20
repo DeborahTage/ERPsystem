@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vetApi } from '../../api';
-import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input, Textarea } from '../../components/ui/Input';
 
 const PrescriptionForm = () => {
   const navigate = useNavigate();
@@ -10,37 +11,74 @@ const PrescriptionForm = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     try {
-      await vetApi.createPrescription({ ...form, quantity: Number(form.quantity), farmId: form.farmId ? Number(form.farmId) : null, clientId: form.clientId ? Number(form.clientId) : null });
-      toast.success('Prescription created');
+      await vetApi.createPrescription({
+        ...form,
+        quantity: Number(form.quantity),
+        farmId: form.farmId ? Number(form.farmId) : null,
+        clientId: form.clientId ? Number(form.clientId) : null,
+      });
       navigate('/veterinary');
     } catch (err) {
-      setError(err.response?.data?.message || 'Error');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || 'Unable to create prescription.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h5 className="fw-bold mb-3">Create Prescription</h5>
-      <Card className="border-0 shadow-sm" style={{ maxWidth: 500 }}>
-        <Card.Body className="p-4">
-          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row className="g-3">
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Rx Number *</Form.Label><Form.Control value={form.prescriptionNumber} onChange={e => setForm({ ...form, prescriptionNumber: e.target.value })} required /></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Drug Name *</Form.Label><Form.Control value={form.drugName} onChange={e => setForm({ ...form, drugName: e.target.value })} required /></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Quantity *</Form.Label><Form.Control type="number" min="0.01" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required /></Form.Group></Col>
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Dosage Instructions</Form.Label><Form.Control as="textarea" rows={2} value={form.dosageInstruction} onChange={e => setForm({ ...form, dosageInstruction: e.target.value })} /></Form.Group></Col>
-            </Row>
-            <div className="d-flex gap-2 mt-4">
-              <Button type="submit" variant="success" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-              <Button variant="outline-secondary" onClick={() => navigate('/veterinary')}>Cancel</Button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Create Prescription</h1>
+        <p className="text-sm text-gray-500">Issue a prescription with dosing and quantity details.</p>
+      </div>
+
+      {error && <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <Card className="max-w-3xl">
+        <CardHeader>
+          <CardTitle>Prescription Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Input
+                label="Rx Number"
+                value={form.prescriptionNumber}
+                onChange={e => setForm({ ...form, prescriptionNumber: e.target.value })}
+                required
+              />
+              <Input
+                label="Drug Name"
+                value={form.drugName}
+                onChange={e => setForm({ ...form, drugName: e.target.value })}
+                required
+              />
+              <Input
+                label="Quantity"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.quantity}
+                onChange={e => setForm({ ...form, quantity: e.target.value })}
+                required
+              />
             </div>
-          </Form>
-        </Card.Body>
+            <Textarea
+              label="Dosage Instructions"
+              rows={3}
+              value={form.dosageInstruction}
+              onChange={e => setForm({ ...form, dosageInstruction: e.target.value })}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" variant="primary" className="w-full sm:w-auto" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+              <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => navigate('/veterinary')}>Cancel</Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

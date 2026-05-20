@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { crmApi } from '../../api';
-import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input, Select, Textarea } from '../../components/ui/Input';
 
 const FarmVisitForm = () => {
   const navigate = useNavigate();
@@ -16,39 +17,80 @@ const FarmVisitForm = () => {
     crmApi.getClients().then(r => setClients(r.data.data || []));
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     try {
       await crmApi.createVisit({ ...form, clientId: Number(form.clientId) });
-      toast.success('Visit recorded');
       navigate('/crm');
     } catch (err) {
-      setError(err.response?.data?.message || 'Error');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || 'Unable to record visit.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h5 className="fw-bold mb-3">Record Farm Visit</h5>
-      <Card className="border-0 shadow-sm" style={{ maxWidth: 600 }}>
-        <Card.Body className="p-4">
-          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row className="g-3">
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Client *</Form.Label><Form.Select value={form.clientId} onChange={e => setForm({ ...form, clientId: e.target.value })} required><option value="">-- Select --</option>{clients.map(c => <option key={c.id} value={c.id}>{c.clientName}</option>)}</Form.Select></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Visit Date</Form.Label><Form.Control type="date" value={form.visitDate} onChange={e => setForm({ ...form, visitDate: e.target.value })} /></Form.Group></Col>
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Purpose</Form.Label><Form.Control value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })} /></Form.Group></Col>
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Observation</Form.Label><Form.Control as="textarea" rows={2} value={form.observation} onChange={e => setForm({ ...form, observation: e.target.value })} /></Form.Group></Col>
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Advice Given</Form.Label><Form.Control as="textarea" rows={2} value={form.adviceGiven} onChange={e => setForm({ ...form, adviceGiven: e.target.value })} /></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Next Follow-up Date</Form.Label><Form.Control type="date" value={form.nextFollowUpDate} onChange={e => setForm({ ...form, nextFollowUpDate: e.target.value })} /></Form.Group></Col>
-            </Row>
-            <div className="d-flex gap-2 mt-4">
-              <Button type="submit" variant="success" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-              <Button variant="outline-secondary" onClick={() => navigate('/crm')}>Cancel</Button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Record Farm Visit</h1>
+        <p className="text-sm text-gray-500">Log visit details and next follow-up actions for your CRM clients.</p>
+      </div>
+
+      {error && <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <Card className="max-w-3xl">
+        <CardHeader>
+          <CardTitle>Visit Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Select
+                label="Client"
+                value={form.clientId}
+                onChange={e => setForm({ ...form, clientId: e.target.value })}
+                options={[{ value: '', label: '-- Select Client --' }, ...clients.map(client => ({ value: String(client.id), label: client.clientName }))]}
+                required
+              />
+              <Input
+                label="Visit Date"
+                type="date"
+                value={form.visitDate}
+                onChange={e => setForm({ ...form, visitDate: e.target.value })}
+              />
+              <Input
+                label="Purpose"
+                value={form.purpose}
+                onChange={e => setForm({ ...form, purpose: e.target.value })}
+              />
+              <Input
+                label="Next Follow-up Date"
+                type="date"
+                value={form.nextFollowUpDate}
+                onChange={e => setForm({ ...form, nextFollowUpDate: e.target.value })}
+              />
             </div>
-          </Form>
-        </Card.Body>
+            <div className="grid gap-4">
+              <Textarea
+                label="Observation"
+                rows={3}
+                value={form.observation}
+                onChange={e => setForm({ ...form, observation: e.target.value })}
+              />
+              <Textarea
+                label="Advice Given"
+                rows={3}
+                value={form.adviceGiven}
+                onChange={e => setForm({ ...form, adviceGiven: e.target.value })}
+              />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" variant="primary" className="w-full sm:w-auto" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+              <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => navigate('/crm')}>Cancel</Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

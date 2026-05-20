@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vetApi, farmApi, flockApi } from '../../api';
-import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input, Select, Textarea } from '../../components/ui/Input';
 
 const DiseaseCaseForm = () => {
   const navigate = useNavigate();
@@ -17,45 +18,107 @@ const DiseaseCaseForm = () => {
   }, []);
 
   const handleFarmChange = (farmId) => {
-    setForm(f => ({ ...f, farmId, flockId: '' }));
-    if (farmId) flockApi.getAll().then(r => setFlocks(r.data.data?.filter(f => String(f.farmId) === String(farmId) && f.status === 'ACTIVE') || []));
+    setForm(prev => ({ ...prev, farmId, flockId: '' }));
+    if (farmId) {
+      flockApi.getAll().then(r => setFlocks(r.data.data?.filter(f => String(f.farmId) === String(farmId) && f.status === 'ACTIVE') || []));
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     try {
-      await vetApi.createDiseaseCase({ ...form, farmId: Number(form.farmId), flockId: Number(form.flockId), numberAffected: Number(form.numberAffected), numberDead: Number(form.numberDead) });
-      toast.success('Disease case recorded');
+      await vetApi.createDiseaseCase({
+        ...form,
+        farmId: Number(form.farmId),
+        flockId: Number(form.flockId),
+        numberAffected: Number(form.numberAffected),
+        numberDead: Number(form.numberDead),
+      });
       navigate('/veterinary');
     } catch (err) {
-      setError(err.response?.data?.message || 'Error');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || 'Unable to record disease case.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h5 className="fw-bold mb-3">Record Disease Case</h5>
-      <Card className="border-0 shadow-sm" style={{ maxWidth: 600 }}>
-        <Card.Body className="p-4">
-          {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row className="g-3">
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Farm *</Form.Label><Form.Select value={form.farmId} onChange={e => handleFarmChange(e.target.value)} required><option value="">-- Select --</option>{farms.map(f => <option key={f.id} value={f.id}>{f.farmName}</option>)}</Form.Select></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Flock *</Form.Label><Form.Select value={form.flockId} onChange={e => setForm({ ...form, flockId: e.target.value })} required><option value="">-- Select --</option>{flocks.map(f => <option key={f.id} value={f.id}>{f.batchCode}</option>)}</Form.Select></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Date Detected</Form.Label><Form.Control type="date" value={form.dateDetected} onChange={e => setForm({ ...form, dateDetected: e.target.value })} /></Form.Group></Col>
-              <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Suspected Disease</Form.Label><Form.Control value={form.suspectedDisease} onChange={e => setForm({ ...form, suspectedDisease: e.target.value })} /></Form.Group></Col>
-              <Col xs={12}><Form.Group><Form.Label className="small fw-semibold">Symptoms</Form.Label><Form.Control as="textarea" rows={2} value={form.symptoms} onChange={e => setForm({ ...form, symptoms: e.target.value })} /></Form.Group></Col>
-              <Col xs={4}><Form.Group><Form.Label className="small fw-semibold">Affected</Form.Label><Form.Control type="number" min="0" value={form.numberAffected} onChange={e => setForm({ ...form, numberAffected: e.target.value })} /></Form.Group></Col>
-              <Col xs={4}><Form.Group><Form.Label className="small fw-semibold">Dead</Form.Label><Form.Control type="number" min="0" value={form.numberDead} onChange={e => setForm({ ...form, numberDead: e.target.value })} /></Form.Group></Col>
-              <Col xs={4}><Form.Group><Form.Label className="small fw-semibold">Severity</Form.Label><Form.Select value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}>{['LOW','MODERATE','HIGH','CRITICAL'].map(s => <option key={s}>{s}</option>)}</Form.Select></Form.Group></Col>
-            </Row>
-            <div className="d-flex gap-2 mt-4">
-              <Button type="submit" variant="success" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-              <Button variant="outline-secondary" onClick={() => navigate('/veterinary')}>Cancel</Button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Record Disease Case</h1>
+        <p className="text-sm text-gray-500">Log disease outbreaks and track severity for your flocks.</p>
+      </div>
+
+      {error && <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <Card className="max-w-4xl">
+        <CardHeader>
+          <CardTitle>Disease Case Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Select
+                label="Farm"
+                value={form.farmId}
+                onChange={e => handleFarmChange(e.target.value)}
+                options={[{ value: '', label: '-- Select Farm --' }, ...farms.map(farm => ({ value: String(farm.id), label: farm.farmName }))]}
+                required
+              />
+              <Select
+                label="Flock"
+                value={form.flockId}
+                onChange={e => setForm(prev => ({ ...prev, flockId: e.target.value }))}
+                options={[{ value: '', label: '-- Select Flock --' }, ...flocks.map(flock => ({ value: String(flock.id), label: flock.batchCode }))]}
+                required
+              />
+              <Input
+                label="Date Detected"
+                type="date"
+                value={form.dateDetected}
+                onChange={e => setForm(prev => ({ ...prev, dateDetected: e.target.value }))}
+              />
+              <Input
+                label="Suspected Disease"
+                value={form.suspectedDisease}
+                onChange={e => setForm(prev => ({ ...prev, suspectedDisease: e.target.value }))}
+              />
             </div>
-          </Form>
-        </Card.Body>
+            <Textarea
+              label="Symptoms"
+              rows={3}
+              value={form.symptoms}
+              onChange={e => setForm(prev => ({ ...prev, symptoms: e.target.value }))}
+            />
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Input
+                label="Affected"
+                type="number"
+                min="0"
+                value={form.numberAffected}
+                onChange={e => setForm(prev => ({ ...prev, numberAffected: e.target.value }))}
+              />
+              <Input
+                label="Dead"
+                type="number"
+                min="0"
+                value={form.numberDead}
+                onChange={e => setForm(prev => ({ ...prev, numberDead: e.target.value }))}
+              />
+              <Select
+                label="Severity"
+                value={form.severity}
+                onChange={e => setForm(prev => ({ ...prev, severity: e.target.value }))}
+                options={['LOW', 'MODERATE', 'HIGH', 'CRITICAL'].map(value => ({ value, label: value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" variant="primary" className="w-full sm:w-auto" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+              <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={() => navigate('/veterinary')}>Cancel</Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

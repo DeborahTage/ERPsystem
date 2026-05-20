@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pharmacyApi, inventoryApi } from '../../api';
-import { Card, Form, Button, Row, Col, Alert, Table } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input, Select, Textarea } from '../../components/ui/Input';
 import { formatCurrency } from '../../utils';
 
 const PharmacySaleForm = () => {
@@ -22,93 +23,202 @@ const PharmacySaleForm = () => {
 
   const addItem = () => {
     if (!currentItem.inventoryItemId || !currentItem.quantity || !currentItem.unitPrice) return;
-    const inv = inventoryItems.find(i => String(i.id) === String(currentItem.inventoryItemId));
-    setItems(prev => [...prev, { ...currentItem, itemName: inv?.itemName, total: Number(currentItem.quantity) * Number(currentItem.unitPrice) }]);
+    const selected = inventoryItems.find(i => String(i.id) === String(currentItem.inventoryItemId));
+    setItems(prev => [
+      ...prev,
+      {
+        ...currentItem,
+        itemName: selected?.itemName,
+        total: Number(currentItem.quantity) * Number(currentItem.unitPrice),
+      },
+    ]);
     setCurrentItem({ inventoryItemId: '', quantity: '', unitPrice: '' });
   };
 
-  const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
+  const removeItem = (index) => setItems(prev => prev.filter((_, idx) => idx !== index));
 
-  const total = items.reduce((sum, i) => sum + i.total, 0);
+  const totalAmount = useMemo(() => items.reduce((sum, item) => sum + (item.total || 0), 0), [items]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (items.length === 0) { setError('Add at least one item'); return; }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!items.length) {
+      setError('Add at least one item before completing the sale.');
+      return;
+    }
     setLoading(true);
     try {
       await pharmacyApi.createSale({
         ...form,
         customerId: form.customerId ? Number(form.customerId) : null,
         prescriptionId: form.prescriptionId ? Number(form.prescriptionId) : null,
-        items: items.map(i => ({ inventoryItemId: Number(i.inventoryItemId), quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) }))
+        items: items.map(item => ({
+          inventoryItemId: Number(item.inventoryItemId),
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+        })),
       });
-      toast.success('Sale completed');
+      setError('');
       navigate('/pharmacy');
     } catch (err) {
-      setError(err.response?.data?.message || 'Error processing sale');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || 'Unable to complete the sale.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h5 className="fw-bold mb-3">New Pharmacy Sale</h5>
-      {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-      <Row className="g-3">
-        <Col xs={12} lg={7}>
-          <Card className="border-0 shadow-sm mb-3">
-            <Card.Body className="p-4">
-              <h6 className="fw-semibold mb-3">Sale Details</h6>
-              <Row className="g-3">
-                <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Receipt # *</Form.Label><Form.Control value={form.receiptNumber} onChange={e => setForm({ ...form, receiptNumber: e.target.value })} required /></Form.Group></Col>
-                <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Date</Form.Label><Form.Control type="date" value={form.saleDate} onChange={e => setForm({ ...form, saleDate: e.target.value })} /></Form.Group></Col>
-                <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Customer</Form.Label><Form.Select value={form.customerId} onChange={e => setForm({ ...form, customerId: e.target.value })}><option value="">-- Walk-in --</option>{customers.map(c => <option key={c.id} value={c.id}>{c.customerName}</option>)}</Form.Select></Form.Group></Col>
-                <Col xs={6}><Form.Group><Form.Label className="small fw-semibold">Payment Method</Form.Label><Form.Select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })}>{['CASH','BANK_TRANSFER','MOBILE_MONEY','CREDIT'].map(m => <option key={m}>{m}</option>)}</Form.Select></Form.Group></Col>
-              </Row>
-            </Card.Body>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">New Pharmacy Sale</h1>
+          <p className="text-sm text-gray-500">Capture sale details and finalize the transaction with a polished checkout form.</p>
+        </div>
+      </div>
+
+      {error && <div className="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+      <div className="grid gap-4 xl:grid-cols-[1.7fr_0.9fr]">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sale Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Input
+                  label="Receipt #"
+                  value={form.receiptNumber}
+                  onChange={e => setForm({ ...form, receiptNumber: e.target.value })}
+                  required
+                />
+                <Input
+                  label="Sale Date"
+                  type="date"
+                  value={form.saleDate}
+                  onChange={e => setForm({ ...form, saleDate: e.target.value })}
+                />
+                <Select
+                  label="Customer"
+                  value={form.customerId}
+                  onChange={e => setForm({ ...form, customerId: e.target.value })}
+                  options={[{ value: '', label: '-- Walk-in --' }, ...customers.map(c => ({ value: String(c.id), label: c.clientName }))]}
+                />
+                <Select
+                  label="Payment Method"
+                  value={form.paymentMethod}
+                  onChange={e => setForm({ ...form, paymentMethod: e.target.value })}
+                  options={['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CREDIT'].map(value => ({ value, label: value }))}
+                />
+              </div>
+            </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="p-4">
-              <h6 className="fw-semibold mb-3">Add Items</h6>
-              <Row className="g-2 align-items-end">
-                <Col xs={5}><Form.Select value={currentItem.inventoryItemId} onChange={e => setCurrentItem({ ...currentItem, inventoryItemId: e.target.value })}><option value="">-- Select Item --</option>{inventoryItems.map(i => <option key={i.id} value={i.id}>{i.itemName} ({i.currentStock} {i.unit})</option>)}</Form.Select></Col>
-                <Col xs={3}><Form.Control type="number" min="0.01" step="0.01" placeholder="Qty" value={currentItem.quantity} onChange={e => setCurrentItem({ ...currentItem, quantity: e.target.value })} /></Col>
-                <Col xs={3}><Form.Control type="number" min="0.01" step="0.01" placeholder="Unit Price" value={currentItem.unitPrice} onChange={e => setCurrentItem({ ...currentItem, unitPrice: e.target.value })} /></Col>
-                <Col xs={1}><Button variant="success" onClick={addItem}>+</Button></Col>
-              </Row>
-              {items.length > 0 && (
-                <Table size="sm" className="mt-3">
-                  <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead>
-                  <tbody>
-                    {items.map((item, i) => (
-                      <tr key={i}>
-                        <td>{item.itemName}</td>
-                        <td>{item.quantity}</td>
-                        <td>{formatCurrency(item.unitPrice)}</td>
-                        <td>{formatCurrency(item.total)}</td>
-                        <td><Button size="sm" variant="outline-danger" onClick={() => removeItem(i)}>×</Button></td>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Items</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr_auto]">
+                <Select
+                  label="Item"
+                  value={currentItem.inventoryItemId}
+                  onChange={e => setCurrentItem({ ...currentItem, inventoryItemId: e.target.value })}
+                  options={[{ value: '', label: '-- Select Item --' }, ...inventoryItems.map(item => ({ value: String(item.id), label: `${item.itemName} (${item.currentStock} ${item.unit})` }))]}
+                />
+                <Input
+                  label="Quantity"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={currentItem.quantity}
+                  onChange={e => setCurrentItem({ ...currentItem, quantity: e.target.value })}
+                />
+                <Input
+                  label="Unit Price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={currentItem.unitPrice}
+                  onChange={e => setCurrentItem({ ...currentItem, unitPrice: e.target.value })}
+                />
+                <div className="mt-6">
+                  <Button variant="primary" className="w-full" onClick={addItem}>Add</Button>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600">Item</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Qty</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Unit</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600">Total</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {items.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-4 py-3 text-gray-900">{item.itemName}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">{item.quantity}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(item.unitPrice)}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(item.total)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <Button variant="secondary" size="sm" onClick={() => removeItem(index)}>Remove</Button>
+                        </td>
                       </tr>
                     ))}
-                    <tr className="fw-bold"><td colSpan={3}>Total</td><td>{formatCurrency(total)}</td><td></td></tr>
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-6 text-center text-sm text-gray-500">No sale items added yet.</td>
+                      </tr>
+                    )}
                   </tbody>
-                </Table>
-              )}
-            </Card.Body>
+                  {items.length > 0 && (
+                    <tfoot className="bg-gray-50">
+                      <tr>
+                        <td colSpan="3" className="px-4 py-3 text-right font-semibold text-gray-900">Total</td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(totalAmount)}</td>
+                        <td className="px-4 py-3" />
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </CardContent>
           </Card>
-        </Col>
-        <Col xs={12} lg={5}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="p-4">
-              <h6 className="fw-semibold mb-3">Summary</h6>
-              <div className="d-flex justify-content-between mb-2"><span>Items:</span><span>{items.length}</span></div>
-              <div className="d-flex justify-content-between mb-3 fw-bold fs-5"><span>Total:</span><span className="text-success">{formatCurrency(total)}</span></div>
-              <Button variant="success" className="w-100" onClick={handleSubmit} disabled={loading || items.length === 0}>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-3xl bg-gray-50 p-4">
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <span>Items</span>
+                <span>{items.length}</span>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-xl font-semibold text-gray-900">
+                <span>Total</span>
+                <span>{formatCurrency(totalAmount)}</span>
+              </div>
+            </div>
+            <Input
+              label="Prescription ID"
+              value={form.prescriptionId}
+              onChange={e => setForm({ ...form, prescriptionId: e.target.value })}
+            />
+            <div className="grid gap-3">
+              <Button type="button" variant="primary" className="w-full" onClick={handleSubmit} disabled={loading || items.length === 0}>
                 {loading ? 'Processing...' : 'Complete Sale'}
               </Button>
-              <Button variant="outline-secondary" className="w-100 mt-2" onClick={() => navigate('/pharmacy')}>Cancel</Button>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+              <Button type="button" variant="secondary" className="w-full" onClick={() => navigate('/pharmacy')}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

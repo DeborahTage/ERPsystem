@@ -1,80 +1,324 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Leaf,
+  Loader2,
+  Lock,
+  Mail,
+  Package,
+  ShieldCheck,
+  Sprout,
+  Stethoscope,
+  Tractor,
+  WalletCards,
+  Wheat,
+} from 'lucide-react';
+
 import { useAuth } from '../../context/AuthContext';
-import { Card, Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+
+const rememberedEmailKey = 'trustAgroRememberedEmail';
+
+const features = [
+  { label: 'Farm Management', icon: Tractor },
+  { label: 'Veterinary Tracking', icon: Stethoscope },
+  { label: 'Inventory & Pharmacy', icon: Package },
+  { label: 'Finance & CRM', icon: WalletCards },
+];
+
+const operationalMetrics = [
+  { label: 'Active modules', value: '12' },
+  { label: 'Audit-ready workflows', value: '24/7' },
+  { label: 'Secure staff access', value: 'RBAC' },
+];
+
+const getAuthErrorMessage = (err) => {
+  if (err.code === 'ECONNABORTED' || !err.response) {
+    return 'Cannot reach the Trust Agro server. Please check the backend connection.';
+  }
+
+  return err.response?.data?.message || 'Invalid email or password. Please try again.';
+};
+
+const validateForm = ({ email, password }) => {
+  const nextErrors = {};
+  const trimmedEmail = email.trim();
+
+  if (!trimmedEmail) {
+    nextErrors.email = 'Email address is required.';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    nextErrors.email = 'Enter a valid business email address.';
+  }
+
+  if (!password) {
+    nextErrors.password = 'Password is required.';
+  }
+
+  return nextErrors;
+};
+
+const BrandMark = ({ className = '' }) => (
+  <div className={`inline-flex items-center gap-3 ${className}`}>
+    <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/20 bg-white/[0.15] shadow-sm shadow-emerald-950/20 backdrop-blur-md">
+      <Leaf className="h-6 w-6 text-emerald-100" aria-hidden="true" />
+    </div>
+    <div>
+      <p className="text-lg font-semibold tracking-tight text-white">Trust Agro</p>
+      <p className="text-xs font-medium uppercase tracking-[0.22em] text-emerald-100/75">Management System</p>
+    </div>
+  </div>
+);
+
+const FeatureHighlight = ({ icon: Icon, label }) => (
+  <div className="group flex items-center gap-3 rounded-lg border border-white/[0.12] bg-white/[0.09] px-4 py-3 text-sm font-medium text-emerald-50 shadow-sm shadow-emerald-950/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.14]">
+    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white/[0.12] text-emerald-100 transition-colors duration-300 group-hover:bg-white/20">
+      <Icon className="h-4 w-4" aria-hidden="true" />
+    </span>
+    <span>{label}</span>
+  </div>
+);
+
+const Metric = ({ label, value }) => (
+  <div>
+    <p className="text-2xl font-semibold tracking-tight text-white">{value}</p>
+    <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-emerald-100/[0.65]">{label}</p>
+  </div>
+);
+
+const TextField = ({ icon: Icon, label, className = '', action, error, ...props }) => (
+  <div className={className}>
+    <label className="mb-1.5 block text-sm font-semibold text-gray-700">
+      {label}
+    </label>
+    <div className="relative">
+      <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+      <Input
+        className={`h-12 rounded-lg bg-white/90 pl-10 ${action ? 'pr-12' : 'pr-4'} text-[15px] shadow-sm shadow-gray-900/5 focus:ring-brand-600 ${
+          error ? '!border-red-300 text-red-900 placeholder:text-red-300 focus:!ring-red-500' : 'border-gray-200'
+        }`}
+        aria-invalid={Boolean(error)}
+        {...props}
+      />
+      {action && <div className="absolute right-2 top-2">{action}</div>}
+    </div>
+    {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
+  </div>
+);
 
 const Login = () => {
-  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem(rememberedEmailKey);
+    if (rememberedEmail) {
+      setForm((current) => ({ ...current, email: rememberedEmail }));
+      setRememberMe(true);
+    }
+  }, []);
+
+  const passwordInputType = useMemo(() => (showPassword ? 'text' : 'password'), [showPassword]);
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, [field]: undefined }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+
+    const nextErrors = validateForm(form);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      toast.error('Please review the highlighted login details.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await login(form.email, form.password);
+      await login(form.email.trim(), form.password);
+
+      if (rememberMe) {
+        localStorage.setItem(rememberedEmailKey, form.email.trim());
+      } else {
+        localStorage.removeItem(rememberedEmailKey);
+      }
+
       navigate('/dashboard');
     } catch (err) {
-      if (err.code === 'ECONNABORTED' || !err.response) {
-        setError(t('auth.cannotReachBackend'));
-      } else {
-        setError(err.response?.data?.message || t('auth.invalidCredentials'));
-      }
+      const message = getAuthErrorMessage(err);
+      setErrors({ form: message });
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-      <Container>
-        <Row className="justify-content-center">
-          <Col xs={12} sm={8} md={5} lg={4}>
-            <div className="text-center mb-4">
-              <div className="fs-1">🌿</div>
-              <h4 className="fw-bold text-success">{t('common.appName')}</h4>
-              <p className="text-muted small">{t('common.tagline')}</p>
+    <main className="min-h-screen bg-slate-50 text-gray-900">
+      <div className="grid min-h-screen lg:grid-cols-[1.07fr_0.93fr]">
+        <section className="relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-emerald-950 to-teal-900 px-6 py-8 text-white sm:px-10 lg:flex lg:flex-col lg:justify-between lg:px-14 lg:py-12">
+          <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_18%_12%,rgba(134,239,172,0.20),transparent_32%),radial-gradient(circle_at_86%_18%,rgba(20,184,166,0.16),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.55),rgba(6,78,59,0.15))]" />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-72 bg-gradient-to-t from-slate-950/70 to-transparent" />
+          <div className="absolute left-10 top-28 -z-10 h-40 w-40 rounded-full border border-white/10" />
+          <div className="absolute right-10 top-20 -z-10 h-28 w-28 rounded-lg border border-white/10 rotate-12" />
+          <div className="absolute bottom-20 left-1/2 -z-10 h-48 w-[38rem] -translate-x-1/2 rounded-[50%] bg-emerald-300/10 blur-3xl" />
+
+          <BrandMark />
+
+          <div className="mt-14 max-w-2xl animate-slide-up lg:mt-0">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.15] bg-white/10 px-3 py-1.5 text-xs font-medium text-emerald-50 shadow-sm shadow-emerald-950/20 backdrop-blur-md">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Enterprise-grade operations workspace
             </div>
-            <Card className="shadow-sm border-0">
-              <Card.Body className="p-4">
-                <h5 className="mb-4 fw-semibold">{t('auth.login')}</h5>
-                {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="small fw-semibold">{t('auth.email')}</Form.Label>
-                    <Form.Control
-                      type="email"
-                      placeholder={t('auth.email')}
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      required
-                    />
-                  </Form.Group>
-                  <Form.Group className="mb-4">
-                    <Form.Label className="small fw-semibold">{t('auth.password')}</Form.Label>
-                    <Form.Control
-                      type="password"
-                      placeholder={t('auth.password')}
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      required
-                    />
-                  </Form.Group>
-                  <Button type="submit" variant="success" className="w-100" disabled={loading}>
-                    {loading ? t('auth.signingIn') : t('auth.login')}
+            <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">
+              Trust Agro Management System
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-emerald-50/80 sm:text-lg">
+              Integrated Farm, Veterinary & Business Management Platform
+            </p>
+
+            <div className="mt-9 grid max-w-xl gap-3 sm:grid-cols-2">
+              {features.map((feature) => (
+                <FeatureHighlight key={feature.label} {...feature} />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-12 grid max-w-2xl gap-6 border-t border-white/[0.12] pt-8 sm:grid-cols-3 lg:mt-0">
+            {operationalMetrics.map((metric) => (
+              <Metric key={metric.label} {...metric} />
+            ))}
+          </div>
+
+          <div className="pointer-events-none absolute bottom-12 right-8 hidden w-[25rem] opacity-80 lg:block" aria-hidden="true">
+            <div className="relative h-56">
+              <div className="absolute bottom-0 left-0 h-20 w-full rounded-t-[70%] border border-emerald-100/10 bg-emerald-100/[0.08] backdrop-blur-sm" />
+              <div className="absolute bottom-16 left-8 h-20 w-28 rounded-lg border border-white/10 bg-white/[0.09] shadow-2xl shadow-slate-950/20" />
+              <div className="absolute bottom-16 left-44 h-28 w-32 rounded-lg border border-white/10 bg-white/[0.09] shadow-2xl shadow-slate-950/20" />
+              <div className="absolute bottom-24 left-[4.5rem] flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100/[0.16]">
+                <Wheat className="h-6 w-6 text-emerald-100" />
+              </div>
+              <div className="absolute bottom-[8.5rem] left-[13.5rem] flex h-14 w-14 items-center justify-center rounded-lg bg-emerald-100/[0.16]">
+                <Sprout className="h-7 w-7 text-emerald-100" />
+              </div>
+              <div className="absolute bottom-10 right-3 h-24 w-24 rounded-full border border-emerald-100/10 bg-white/[0.07]" />
+            </div>
+          </div>
+        </section>
+
+        <section className="flex min-h-[640px] items-center justify-center px-5 py-10 sm:px-8 lg:min-h-screen lg:px-12">
+          <div className="w-full max-w-md animate-scale-in">
+            <div className="mb-8 text-center lg:text-left">
+              <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-brand-700 shadow-sm lg:mx-0">
+                <Leaf className="h-6 w-6" aria-hidden="true" />
+              </div>
+              <p className="text-sm font-medium text-brand-700">Authorized access</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">Welcome back</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Sign in to continue managing Trust Agro operations.
+              </p>
+            </div>
+
+            <Card className="border-gray-200/80 bg-white/[0.92] shadow-xl shadow-slate-900/[0.08] backdrop-blur" padding="none">
+              <CardHeader className="mb-0 !flex-col !items-start border-b border-gray-100 px-6 py-5">
+                <CardTitle className="text-lg">Staff Login</CardTitle>
+                <CardDescription>Use your company credentials to access the ERP workspace.</CardDescription>
+              </CardHeader>
+              <CardContent className="px-6 py-6">
+                {errors.form && (
+                  <div className="mb-5 flex gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{errors.form}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                  <TextField
+                    icon={Mail}
+                    label="Email address"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@trustagro.com"
+                    value={form.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    error={errors.email}
+                    disabled={loading}
+                  />
+
+                  <TextField
+                    icon={Lock}
+                    label="Password"
+                    type={passwordInputType}
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    value={form.password}
+                    onChange={(e) => updateField('password', e.target.value)}
+                    error={errors.password}
+                    disabled={loading}
+                    action={
+                      <button
+                        type="button"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        onClick={() => setShowPassword((current) => !current)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    }
+                  />
+
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        disabled={loading}
+                        className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      Remember me
+                    </label>
+                    <a href="/forgot-password" className="text-sm font-semibold text-brand-700 transition-colors hover:text-brand-800">
+                      Forgot password?
+                    </a>
+                  </div>
+
+                  <Button type="submit" size="lg" className="h-12 w-full rounded-lg text-[15px]" disabled={loading}>
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        Signing in
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-2">
+                        Login securely
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                    )}
                   </Button>
-                </Form>
-              </Card.Body>
+                </form>
+              </CardContent>
             </Card>
-          </Col>
-        </Row>
-      </Container>
-    </div>
+
+            <p className="mt-6 text-center text-sm text-gray-500">
+              Secure access for authorized Trust Agro staff
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 };
 

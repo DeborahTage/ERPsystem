@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { flockApi } from '../../api';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatDate } from '../../utils';
@@ -15,6 +16,11 @@ const FlockList = () => {
     flockApi.getAll().then(r => setFlocks(r.data.data)).finally(() => setLoading(false));
   }, []);
 
+  const handleClose = async (id) => {
+    await flockApi.close(id);
+    setFlocks(prev => prev.map(item => item.id === id ? { ...item, status: 'CLOSED' } : item));
+  };
+
   const columns = [
     { key: 'batchCode', label: 'Batch Code' },
     { key: 'farmName', label: 'Farm' },
@@ -26,24 +32,27 @@ const FlockList = () => {
     {
       key: 'actions', label: 'Actions',
       render: r => (
-        <div className="d-flex gap-1">
-          <Button size="sm" variant="outline-primary" onClick={() => navigate(`/flocks/${r.id}/edit`)}>Edit</Button>
-          {r.status === 'ACTIVE' && <Button size="sm" variant="outline-danger" onClick={() => flockApi.close(r.id).then(() => setFlocks(f => f.map(x => x.id === r.id ? { ...x, status: 'CLOSED' } : x)))}>Close</Button>}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={() => navigate(`/flocks/${r.id}/edit`)}>Edit</Button>
+          {r.status === 'ACTIVE' && <Button size="sm" variant="danger" onClick={() => handleClose(r.id)}>Close</Button>}
         </div>
-      )
+      ),
     },
   ];
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h5 className="fw-bold mb-0">Flocks / Batches</h5>
-        <Button variant="success" size="sm" onClick={() => navigate('/flocks/new')}>+ Add Flock</Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Flocks / Batches</h1>
+          <p className="text-sm text-gray-500">Manage flock batches and review current status at a glance.</p>
+        </div>
+        <Button variant="primary" className="w-full sm:w-auto" onClick={() => navigate('/flocks/new')}>+ Add Flock</Button>
       </div>
-      <Card className="border-0 shadow-sm">
-        <Card.Body>
+      <Card>
+        <CardContent>
           <DataTable columns={columns} data={flocks} loading={loading} />
-        </Card.Body>
+        </CardContent>
       </Card>
     </div>
   );

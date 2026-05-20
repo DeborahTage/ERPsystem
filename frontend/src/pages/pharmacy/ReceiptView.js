@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pharmacyApi } from '../../api';
-import { Card, Button, Table, Row, Col } from 'react-bootstrap';
+import { Card, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { formatDate, formatCurrency } from '../../utils';
 
 const ReceiptView = () => {
@@ -13,46 +14,78 @@ const ReceiptView = () => {
     pharmacyApi.getReceipt(id).then(r => setSale(r.data.data));
   }, [id]);
 
-  if (!sale) return <p>Loading...</p>;
+  if (!sale) {
+    return <div className="text-center py-12 text-sm text-gray-500">Loading receipt...</div>;
+  }
 
   return (
-    <div style={{ maxWidth: 500, margin: '0 auto' }}>
-      <Card className="border-0 shadow-sm">
-        <Card.Body className="p-4">
-          <div className="text-center mb-3">
-            <div className="fs-4">🌿</div>
-            <h5 className="fw-bold text-success">Trust Agro</h5>
-            <p className="text-muted small mb-0">Pharmacy Receipt</p>
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+      <Card>
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <div className="text-3xl">🌿</div>
+            <h2 className="text-2xl font-semibold text-gray-900">Trust Agro</h2>
+            <p className="text-sm text-gray-500">Pharmacy Receipt</p>
           </div>
-          <hr />
-          <Row className="mb-2">
-            <Col xs={6}><small className="text-muted">Receipt #</small><div className="fw-semibold">{sale.receiptNumber}</div></Col>
-            <Col xs={6}><small className="text-muted">Date</small><div className="fw-semibold">{formatDate(sale.saleDate)}</div></Col>
-          </Row>
-          <Row className="mb-3">
-            <Col xs={6}><small className="text-muted">Customer</small><div>{sale.customerName || 'Walk-in'}</div></Col>
-            <Col xs={6}><small className="text-muted">Payment</small><div>{sale.paymentMethod}</div></Col>
-          </Row>
-          <Table size="sm" bordered>
-            <thead className="table-light"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
-            <tbody>
-              {sale.items?.map((item, i) => (
-                <tr key={i}>
-                  <td>{item.itemName}</td>
-                  <td>{item.quantity}</td>
-                  <td>{formatCurrency(item.unitPrice)}</td>
-                  <td>{formatCurrency(item.totalPrice)}</td>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Receipt #</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{sale.receiptNumber}</p>
+            </div>
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Date</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{formatDate(sale.saleDate)}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Customer</p>
+              <p className="mt-2 text-sm text-gray-900">{sale.customerName || 'Walk-in'}</p>
+            </div>
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Payment</p>
+              <p className="mt-2 text-sm text-gray-900">{sale.paymentMethod}</p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-3xl border border-gray-200">
+            <table className="min-w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="px-4 py-3">Item</th>
+                  <th className="px-4 py-3 text-right">Qty</th>
+                  <th className="px-4 py-3 text-right">Price</th>
+                  <th className="px-4 py-3 text-right">Total</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot><tr><td colSpan={3} className="fw-bold text-end">Total</td><td className="fw-bold">{formatCurrency(sale.totalAmount)}</td></tr></tfoot>
-          </Table>
-          <div className="text-center mt-3 text-muted small">Thank you for your purchase!</div>
-          <div className="d-flex gap-2 mt-3">
-            <Button variant="outline-secondary" className="w-100" onClick={() => navigate('/pharmacy')}>Back</Button>
-            <Button variant="success" className="w-100" onClick={() => window.print()}>Print</Button>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {sale.items?.map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-3">{item.itemName}</td>
+                    <td className="px-4 py-3 text-right">{item.quantity}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(item.unitPrice)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(item.totalPrice)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-gray-50">
+                <tr>
+                  <td colSpan="3" className="px-4 py-3 text-right font-semibold text-gray-900">Total</td>
+                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(sale.totalAmount)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        </Card.Body>
+
+          <div className="text-center text-sm text-gray-500">Thank you for your purchase!</div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button variant="secondary" className="w-full" onClick={() => navigate('/pharmacy')}>Back</Button>
+            <Button variant="primary" className="w-full" onClick={() => window.print()}>Print</Button>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );

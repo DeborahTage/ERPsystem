@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { dailyRecordApi } from '../../api';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import DataTable from '../../components/common/DataTable';
 import { formatDate } from '../../utils';
 
@@ -26,20 +27,23 @@ const DailyFarmRecordList = () => {
     { key: 'recordedBy', label: 'Recorded By' },
     {
       key: 'actions', label: 'Actions',
-      render: r => <Button size="sm" variant="outline-primary" onClick={() => navigate(`/daily-records/${r.id}/edit`)}>Edit</Button>
+      render: r => <Button size="sm" variant="secondary" onClick={() => navigate(`/daily-records/${r.id}/edit`)}>Edit</Button>,
     },
   ];
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h5 className="fw-bold mb-0">Daily Farm Records</h5>
-        <Button variant="success" size="sm" onClick={() => navigate('/daily-records/new')}>+ Add Record</Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Daily Farm Records</h1>
+          <p className="text-sm text-gray-500">Monitor daily production and health metrics across farms and flocks.</p>
+        </div>
+        <Button variant="primary" className="w-full sm:w-auto" onClick={() => navigate('/daily-records/new')}>+ Add Record</Button>
       </div>
-      <Card className="border-0 shadow-sm">
-        <Card.Body>
+      <Card>
+        <CardContent>
           <DataTable columns={columns} data={records} loading={loading} />
-        </Card.Body>
+        </CardContent>
       </Card>
     </div>
   );
